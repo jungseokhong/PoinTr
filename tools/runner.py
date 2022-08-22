@@ -9,6 +9,7 @@ from utils.logger import *
 from utils.AverageMeter import AverageMeter
 from utils.metrics import Metrics
 from extensions.chamfer_dist import ChamferDistanceL1, ChamferDistanceL2
+import numpy as np
 
 def run_net(args, config, train_writer=None, val_writer=None):
     logger = get_logger(args.log_name)
@@ -342,32 +343,43 @@ def test(base_model, test_dataloader, ChamferDisL1, ChamferDisL2, args, config, 
                 category_metrics[taxonomy_id].update(_metrics)
 
             elif dataset_name == 'ShapeNet':
+                
                 gt = data.cuda()
                 choice = [torch.Tensor([1,1,1]),torch.Tensor([1,1,-1]),torch.Tensor([1,-1,1]),torch.Tensor([-1,1,1]),
                             torch.Tensor([-1,-1,1]),torch.Tensor([-1,1,-1]), torch.Tensor([1,-1,-1]),torch.Tensor([-1,-1,-1])]
                 num_crop = int(npoints * crop_ratio[args.mode])
+                cnt_ = 0 #####
+                ideal_obj = {"bowl":"02880940", "knife":"03624134", "mug":"03797390"}
+                target_obj = {"02691156": "airplane", "02747177": "trash bin", "02773838": "bag", "02801938": "basket", "02808440": "bathtub", "02818832": "bed", "02828884": "bench", "02843684": "birdhouse", "02871439": "bookshelf", "02876657": "bottle", "02880940": "bowl", "02924116": "bus", "02933112": "cabinet", "02942699": "camera", "02946921": "can", "02954340": "cap", "02958343": "car", "02992529": "cellphone", "03001627": "chair", "03046257": "clock", "03085013": "keyboard", "03207941": "dishwasher", "03211117": "display", "03261776": "earphone", "03325088": "faucet", "03337140": "file cabinet", "03467517": "guitar", "03513137": "helmet", "03593526": "jar", "03624134": "knife", "03636649": "lamp", "03642806": "laptop", "03691459": "loudspeaker", "03710193": "mailbox", "03759954": "microphone", "03761084": "microwaves", "03790512": "motorbike", "03797390": "mug", "03928116": "piano", "03938244": "pillow", "03948459": "pistol", "03991062": "flowerpot", "04004475": "printer", "04074963": "remote", "04090263": "rifle", "04099429": "rocket", "04225987": "skateboard", "04256520": "sofa", "04330267": "stove", "04379243": "table", "04401088": "telephone", "04460130": "tower", "04468005": "train", "04530566": "watercraft", "04554684": "washer"}
                 for item in choice:           
                     partial, _ = misc.seprate_point_cloud(gt, npoints, num_crop, fixed_points = item)
                     # NOTE: subsample the input
+                    print(target_obj[taxonomy_ids[0]], model_ids, partial.shape)
+                    # if taxonomy_ids == ideal_obj["bowl"] or ideal_obj["knife"] or ideal_obj["mug"]:
+                        # np.savetxt('bowl_'+str(cnt_)+'_.xyz', partial[0].cpu().numpy())
                     partial = misc.fps(partial, 2048)
-                    ret = base_model(partial)
-                    coarse_points = ret[0]
-                    dense_points = ret[1]
+                    if taxonomy_ids[0] == ideal_obj["mug"]:
+                        np.savetxt(target_obj[taxonomy_ids[0]]+'_partial_'+str(cnt_)+'.xyz', partial[0].cpu().numpy())
+                        ret = base_model(partial)
+                        coarse_points = ret[0]
+                        dense_points = ret[1]
+                        np.savetxt(target_obj[taxonomy_ids[0]]+'_dense_'+str(cnt_)+'.xyz', dense_points[0].cpu().numpy())
+                        cnt_ += 1
+                        print(cnt_, dense_points.shape)
+                        sparse_loss_l1 =  ChamferDisL1(coarse_points, gt)
+                        sparse_loss_l2 =  ChamferDisL2(coarse_points, gt)
+                        dense_loss_l1 =  ChamferDisL1(dense_points, gt)
+                        dense_loss_l2 =  ChamferDisL2(dense_points, gt)
 
-                    sparse_loss_l1 =  ChamferDisL1(coarse_points, gt)
-                    sparse_loss_l2 =  ChamferDisL2(coarse_points, gt)
-                    dense_loss_l1 =  ChamferDisL1(dense_points, gt)
-                    dense_loss_l2 =  ChamferDisL2(dense_points, gt)
+                        test_losses.update([sparse_loss_l1.item() * 1000, sparse_loss_l2.item() * 1000, dense_loss_l1.item() * 1000, dense_loss_l2.item() * 1000])
 
-                    test_losses.update([sparse_loss_l1.item() * 1000, sparse_loss_l2.item() * 1000, dense_loss_l1.item() * 1000, dense_loss_l2.item() * 1000])
-
-                    _metrics = Metrics.get(dense_points ,gt)
+                        _metrics = Metrics.get(dense_points ,gt)
 
                     # test_metrics.update(_metrics)
 
-                    if taxonomy_id not in category_metrics:
-                        category_metrics[taxonomy_id] = AverageMeter(Metrics.names())
-                    category_metrics[taxonomy_id].update(_metrics)
+                        if taxonomy_id not in category_metrics:
+                            category_metrics[taxonomy_id] = AverageMeter(Metrics.names())
+                        category_metrics[taxonomy_id].update(_metrics)
             elif dataset_name == 'KITTI':
                 partial = data.cuda()
                 ret = base_model(partial)
