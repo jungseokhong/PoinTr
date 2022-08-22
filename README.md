@@ -180,3 +180,11 @@ If you find our work useful in your research, please consider citing:
   year={2021}
 }
 ```
+
+
+
+### FOR MAPPING
+1. Set up environments and install necessary packages listed above.
+2. Create /path/to/repo/pretrained and download weights. We use shapenet 55
+3. my_main.py has the module that can be used for the pipeline.
+
