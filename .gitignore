@@ -135,6 +135,7 @@ dmypy.json
 *.npy
 
 experiments/
+data/ShapeNet55-34/*.zip
 data/ShapeNet55-34/shapenet_pc
 data/ShapeNet55-34/clean*
 data/KITTI/cars
