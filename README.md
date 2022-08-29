@@ -56,6 +56,12 @@ The solution for a common bug in chamfer distance installation can be found in I
 ```
 # PointNet++
 pip install "git+git://github.com/erikwijmans/Pointnet2_PyTorch.git#egg=pointnet2_ops&subdirectory=pointnet2_ops_lib"
+
+# PointNet++ (my version install if above method doesn't work)
+git clone https://github.com/erikwijmans/Pointnet2_PyTorch.git
+cd Pointnet2_PyTorch/
+pip install pointnet2_ops_lib/ .
+
 # GPU kNN
 pip install --upgrade https://github.com/unlimblue/KNN_CUDA/releases/download/0.2/KNN_CUDA-0.2-py3-none-any.whl
 ```
@@ -181,10 +187,13 @@ If you find our work useful in your research, please consider citing:
 }
 ```
 
+## commands to run as module
+```
+CUDA_VISIBLE_DEVICES=0 python my_main.py
+```
 
 
-### FOR MAPPING
-1. Set up environments and install necessary packages listed above.
-2. Create /path/to/repo/pretrained and download weights. We use shapenet 55
-3. my_main.py has the module that can be used for the pipeline.
-
+below commands run as well in case you want a verbose version.
+```
+CUDA_VISIBLE_DEVICES=0 python main.py --test --ckpts ./pretrained/pointr_training_from_scratch_c55_best.pth --config ./cfgs/ShapeNet55_models/PoinTr.yaml --mode easy --exp_name example
+```
